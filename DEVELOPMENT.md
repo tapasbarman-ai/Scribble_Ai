@@ -23,3 +23,8 @@ Drawing paint tools (brush size slider, eraser toggle, color palettes) placed in
 25-state undo/redo history stack tracking ImageData arrays inside React useRef buffers.
 
 
+### Section 6: Offscreen Canvas Compositing
+
+Offscreen canvas paints translucent drawings onto solid white backgrounds prior to AI upload.
+
+

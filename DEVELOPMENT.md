@@ -38,3 +38,8 @@ Canvas exports encoded as JPEG base64 strings to minimize API payloads.
 Poll loops query guess updates every 2.5 seconds in Sandbox mode when the canvas is dirty.
 
 
+### Section 9: Creative Interpretation Text Cards
+
+Sandbox results rendered inside crayon paper containers featuring custom generated text descriptions.
+
+

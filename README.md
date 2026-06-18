@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🖍️ doodle.ai — Draw & Let AI Guess!
 
-## Getting Started
+A fun, real-time drawing game where you sketch on a canvas and AI vision models try to guess what you drew. Powered by **Ollama** (local models), **Google Gemini**, and **Groq** cloud APIs.
 
-First, run the development server:
+![doodle.ai Main UI](public/screenshots/doodle-ai-main.png)
+
+## ✨ Features
+
+- **🎨 Drawing Canvas** — Full-featured sketch board with brush, eraser, color palette, undo/redo, and adjustable stroke size.
+- **🧠 Multi-Model AI** — Choose from local Ollama vision models, Google Gemini cloud models, or Groq cloud models (Qwen & Llama 4 Scout).
+- **🔄 Auto-Guess** — AI automatically identifies your drawing in real-time as you sketch.
+- **🏆 Challenge Mode** — Timed drawing challenges where the AI races to guess the target word.
+- **🎯 Sandbox Mode** — Free-draw mode with creative AI interpretations of your artwork.
+- **⚠️ Rate Limit Alarm** — Visual alarm with shaking bell animation when a cloud API's free tier limit is exceeded.
+- **⚙️ Configurable** — Easy settings panel for Ollama host, Gemini API key, and Groq API key.
+
+## 🤖 Supported AI Models
+
+![Model Selector Dropdown](public/screenshots/model-selector.png)
+
+| Provider | Models | Type |
+|----------|--------|------|
+| **Gemini** | `gemini-2.5-flash`, `gemini-1.5-flash`, `gemini-1.5-pro` | Cloud |
+| **Groq** | `meta-llama/llama-4-scout-17b-16e-instruct`, `qwen/qwen3.6-27b`, `qwen/qwen3-32b` | Cloud |
+| **Ollama** | `moondream`, `llava`, `llama3.2-vision`, and more | Local |
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Node.js** 18+
+- (Optional) **Ollama** installed and running for local models
+- (Optional) **Gemini API Key** from [Google AI Studio](https://aistudio.google.com/)
+- (Optional) **Groq API Key** from [Groq Console](https://console.groq.com/)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd scribble-game
+
+# Install dependencies
+npm install
+
+# Set up environment variables
+cp .env.local.example .env.local
+# Edit .env.local with your API keys
+```
+
+### Environment Variables
+
+Create a `.env.local` file in the root directory:
+
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
+```
+
+> **Note:** API keys can also be configured directly in the browser via the Settings panel. Keys entered in the UI are stored locally in your browser's localStorage.
+
+### Run Development Server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🎮 How to Play
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Sandbox Mode
+1. Select an AI model from the dropdown.
+2. Draw anything on the canvas.
+3. Enable **Auto-Guess** or click **Ask AI to Guess**.
+4. Watch the AI interpret your drawing in real-time!
 
-## Learn More
+### AI Challenge Mode
+1. Switch to the **AI Challenge** tab.
+2. Click **Start Game** — you'll be given a word to draw.
+3. Draw the word within the 40-second time limit.
+4. The AI guesses every 2.5 seconds — earn points for speed!
 
-To learn more about Next.js, take a look at the following resources:
+## 🛠️ Tech Stack
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Framework:** [Next.js](https://nextjs.org) 16 (App Router)
+- **Styling:** TailwindCSS 4 + custom crayon-themed design system
+- **UI Components:** shadcn/ui + Lucide icons
+- **Fonts:** Patrick Hand (headings) + Fredoka (body)
+- **AI Backends:** Ollama REST API, Google Gemini API, Groq OpenAI-compatible API
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📁 Project Structure
 
-## Deploy on Vercel
+```
+src/
+├── app/
+│   ├── api/
+│   │   ├── guess/route.ts    # AI prediction endpoint (Ollama/Gemini/Groq)
+│   │   ├── status/route.ts   # Connection & model status checker
+│   │   ├── pull/route.ts     # Ollama model downloader (streaming)
+│   │   └── words/route.ts    # Random word generator for challenges
+│   ├── globals.css           # Design system & custom animations
+│   ├── layout.tsx            # Root layout with fonts & SVG filters
+│   └── page.tsx              # Main game page (canvas + game logic)
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📄 License
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is open source and available under the [MIT License](LICENSE).

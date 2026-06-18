@@ -168,3 +168,35 @@
 .animate-urgent {
   animation: urgentPulse 0.4s infinite alternate;
 }
+
+.crayon-logo {
+  font-family: var(--font-heading);
+}
+
+/* Shaking Alarm Bell animation */
+@keyframes alarmShake {
+  0% { transform: rotate(0); }
+  15% { transform: rotate(15deg); }
+  30% { transform: rotate(-15deg); }
+  45% { transform: rotate(10deg); }
+  60% { transform: rotate(-10deg); }
+  75% { transform: rotate(6deg); }
+  90% { transform: rotate(-6deg); }
+  100% { transform: rotate(0); }
+}
+
+.animate-alarm-shake {
+  animation: alarmShake 0.6s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+/* API Limit Error Pulse Glow */
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 1.8s infinite;
+}

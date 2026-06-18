@@ -18,7 +18,9 @@ import {
   CheckCircle,
   XCircle,
   X,
-  Volume2
+  Volume2,
+  AlertTriangle,
+  Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -34,6 +36,15 @@ export default function GamePage() {
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [activeModel, setActiveModel] = useState("");
   const [connectionStatusText, setConnectionStatusText] = useState("Checking Ollama...");
+
+  // Gemini API states
+  const [userGeminiKey, setUserGeminiKey] = useState("");
+  const [geminiConfiguredInBackend, setGeminiConfiguredInBackend] = useState(false);
+
+  // Groq API states
+  const [userGroqKey, setUserGroqKey] = useState("");
+  const [groqConfiguredInBackend, setGroqConfiguredInBackend] = useState(false);
+  const [apiRateLimitExceeded, setApiRateLimitExceeded] = useState(false);
 
   // Drawing configurations
   const [brushColor, setBrushColor] = useState("#000000");
@@ -101,6 +112,14 @@ export default function GamePage() {
     const cachedHost = localStorage.getItem("ollama_host");
     if (cachedHost) setOllamaHost(cachedHost);
 
+    // Load Gemini local API Key
+    const cachedGeminiKey = localStorage.getItem("gemini_api_key");
+    if (cachedGeminiKey) setUserGeminiKey(cachedGeminiKey);
+
+    // Load Groq local API Key
+    const cachedGroqKey = localStorage.getItem("groq_api_key");
+    if (cachedGroqKey) setUserGroqKey(cachedGroqKey);
+
     // Initial check
     checkStatus();
 
@@ -113,17 +132,20 @@ export default function GamePage() {
   useEffect(() => {
     if (autoGuessIntervalRef.current) clearInterval(autoGuessIntervalRef.current);
 
+    const isGemini = activeModel.startsWith("gemini-");
+    const intervalTime = isGemini ? 5000 : 2500; // Increase interval for Gemini to respect rate limits
+
     autoGuessIntervalRef.current = setInterval(() => {
       if (
         currentGameMode === "sandbox" &&
         autoGuess &&
         canvasIsDirtyRef.current &&
-        ollamaConnected &&
+        (ollamaConnected || isGemini) &&
         activeModel
       ) {
         triggerGuess(true);
       }
-    }, 2500);
+    }, intervalTime);
 
     return () => {
       if (autoGuessIntervalRef.current) clearInterval(autoGuessIntervalRef.current);
@@ -215,35 +237,92 @@ export default function GamePage() {
     if (autoGuessIntervalRef.current) clearInterval(autoGuessIntervalRef.current);
   };
 
-  // Check Ollama status
+  // Check Ollama, Gemini and Groq status
   const checkStatus = async () => {
-    setConnectionStatusText("Connecting to backend...");
+    setConnectionStatusText("Checking status...");
     try {
       const res = await fetch("/api/status");
       const data = await res.json();
 
+      setGeminiConfiguredInBackend(data.gemini_configured || false);
+      setGroqConfiguredInBackend(data.groq_configured || false);
+
+      const cachedGeminiKey = localStorage.getItem("gemini_api_key") || "";
+      const hasGemini = data.gemini_configured || !!cachedGeminiKey;
+      const geminiModels = hasGemini ? ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.5-pro"] : [];
+
+      const cachedGroqKey = localStorage.getItem("groq_api_key") || "";
+      const hasGroq = data.groq_configured || !!cachedGroqKey;
+      const groqModels = hasGroq ? [
+        "meta-llama/llama-4-scout-17b-16e-instruct",
+        "qwen/qwen3.6-27b",
+        "qwen/qwen3-32b"
+      ] : [];
+
       if (data.ollama_connected) {
         setOllamaConnected(true);
-        setConnectionStatusText("Ollama Ready");
-        setAvailableModels(data.vision_models);
+        let statusText = "Ollama Ready";
+        if (hasGemini && hasGroq) {
+          statusText = "Ollama, Gemini & Groq Ready";
+        } else if (hasGemini) {
+          statusText = "Ollama & Gemini Ready";
+        } else if (hasGroq) {
+          statusText = "Ollama & Groq Ready";
+        }
+        setConnectionStatusText(statusText);
+        
+        const allModels = [...geminiModels, ...groqModels, ...(data.vision_models || [])];
+        setAvailableModels(allModels);
 
-        if (data.vision_models.length > 0) {
-          // Find moondream default
-          const defaultModel = data.vision_models.find((m: string) => m.toLowerCase().includes("moondream")) || data.vision_models[0];
-          setActiveModel(defaultModel);
-        } else {
-          showBanner("No vision model found! Pull 'moondream' in settings.", "warning");
+        if (allModels.length > 0) {
+          // Set active model to default if not already configured
+          setActiveModel(prev => {
+            if (prev && allModels.includes(prev)) return prev;
+            return allModels.find(m => m.includes("qwen")) || allModels.find(m => m.includes("gemini-2.5-flash")) || allModels.find(m => m.includes("moondream")) || allModels[0];
+          });
         }
       } else {
         setOllamaConnected(false);
-        setConnectionStatusText("Ollama Offline");
-        showBanner(`Cannot reach Ollama server: ${data.error || "unavailable"}`, "error");
+        let statusText = "Ollama Offline";
+        if (hasGemini && hasGroq) {
+          statusText = "Gemini & Groq Active";
+        } else if (hasGemini) {
+          statusText = "Gemini Active";
+        } else if (hasGroq) {
+          statusText = "Groq Active";
+        }
+        setConnectionStatusText(statusText);
+        
+        const allModels = [...geminiModels, ...groqModels];
+        setAvailableModels(allModels);
+        if (allModels.length > 0) {
+          setActiveModel(prev => {
+            if (prev && allModels.includes(prev)) return prev;
+            return allModels.find(m => m.includes("qwen")) || allModels[0];
+          });
+        }
+        
+        if (!hasGemini && !hasGroq) {
+          showBanner("Cannot reach Ollama server and cloud APIs are not configured.", "warning");
+        }
       }
     } catch (e) {
       setOllamaConnected(false);
       setConnectionStatusText("Backend Offline");
       showBanner("Cannot connect to the scribble server.", "error");
     }
+  };
+
+  const handleSaveGeminiKey = () => {
+    localStorage.setItem("gemini_api_key", userGeminiKey);
+    showBanner("Gemini API Key updated! Re-verifying...", "success");
+    checkStatus();
+  };
+
+  const handleSaveGroqKey = () => {
+    localStorage.setItem("groq_api_key", userGroqKey);
+    showBanner("Groq API Key updated! Re-verifying...", "success");
+    checkStatus();
   };
 
   // Banner display utility
@@ -415,8 +494,9 @@ export default function GamePage() {
 
   // 3. AI Prediction Pipeline
   const triggerGuess = async (isAuto = false) => {
-    if (!ollamaConnected || !activeModel) {
-      if (!isAuto) showBanner("Local AI is not ready yet.", "warning");
+    const isGemini = activeModel.startsWith("gemini-");
+    if ((!ollamaConnected && !isGemini) || !activeModel) {
+      if (!isAuto) showBanner("AI model is not ready yet.", "warning");
       return;
     }
 
@@ -436,20 +516,32 @@ export default function GamePage() {
         "Keep the output extremely short. Do not write full sentences."
         : `The user wants to draw a '${targetWord}'. Give 3 possible brief labels representing what they drew, separated by commas.`;
 
+      const cachedGeminiKey = localStorage.getItem("gemini_api_key") || "";
+      const cachedGroqKey = localStorage.getItem("groq_api_key") || "";
+
       const response = await fetch("/api/guess", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: imageData,
           model: activeModel,
-          prompt: promptText
+          prompt: promptText,
+          geminiApiKey: cachedGeminiKey,
+          groqApiKey: cachedGroqKey
         })
       });
 
-      if (!response.ok) throw new Error("API call failed");
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        if (errorData.isRateLimit) {
+          setApiRateLimitExceeded(true);
+        }
+        throw new Error(errorData.error || "API call failed");
+      }
       const data = await response.json();
 
       if (data.success) {
+        setApiRateLimitExceeded(false);
         if (currentGameMode === "sandbox") {
           setShowSandboxPlaceholder(false);
           setSandboxGuesses(data.guesses);
@@ -545,8 +637,9 @@ export default function GamePage() {
   };
 
   const startChallenge = async () => {
-    if (!ollamaConnected || !activeModel) {
-      showBanner("Vision AI is not ready. Start Ollama serve.", "warning");
+    const isGemini = activeModel.startsWith("gemini-");
+    if ((!ollamaConnected && !isGemini) || !activeModel) {
+      showBanner("Vision AI is not ready. Select a model or set Gemini API key.", "warning");
       return;
     }
 
@@ -670,6 +763,49 @@ export default function GamePage() {
   return (
     <div className="flex flex-col flex-grow p-4 md:p-6 w-full max-w-[1400px] mx-auto min-h-screen">
 
+      {/* Rate Limit Alarm Modal */}
+      {apiRateLimitExceeded && (
+        <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-[#fff0f0] border-[4px] border-[#ff3333] border-radius-crayon shadow-flat-lg p-6 max-w-md w-full animate-pulse-glow filter-wobble">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="bg-[#ff3333] p-3 rounded-full border-2 border-slate-900 animate-alarm-shake text-white">
+                <Bell className="w-8 h-8 stroke-[2.5]" />
+              </div>
+              <div>
+                <h3 className="font-heading font-extrabold text-3xl text-[#ff3333] tracking-wide">
+                  LIMIT EXCEEDED!
+                </h3>
+                <p className="text-xs font-bold text-slate-500 uppercase">
+                  Free API Limit Reached
+                </p>
+              </div>
+            </div>
+
+            <p className="font-heading font-extrabold text-xl text-slate-800 leading-snug mb-5">
+              The free tier limit for your {activeModel.startsWith("gemini-") ? "Gemini" : "Groq"} API key is over! Please configure a different key or wait for the quota to reset.
+            </p>
+
+            <div className="flex gap-3">
+              <Button
+                onClick={() => {
+                  setApiRateLimitExceeded(false);
+                  setIsSettingsOpen(true);
+                }}
+                className="flex-1 bg-[#ffcc00] hover:bg-[#e6b800] border-[2.5px] border-slate-900 border-radius-btn shadow-flat font-heading font-extrabold text-lg p-4 cursor-pointer text-slate-900"
+              >
+                Update API Key
+              </Button>
+              <Button
+                onClick={() => setApiRateLimitExceeded(false)}
+                className="bg-white hover:bg-slate-100 border-[2.5px] border-slate-900 border-radius-btn shadow-flat font-heading font-extrabold text-lg p-4 cursor-pointer text-slate-900"
+              >
+                Dismiss
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Dynamic Banner Notification */}
       {banner && (
         <div
@@ -690,19 +826,18 @@ export default function GamePage() {
       <header className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 bg-[#faf8f5] border-[3.5px] border-slate-900 border-radius-crayon shadow-flat-lg mb-6 filter-wobble">
 
         {/* Rainbow crayon logo */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 select-none">
           <Pencil className="w-7 h-7 text-[#ff3366] -rotate-15 drop-shadow-[2px_2px_0px_#1e293b]" />
-          <h1 className="crayon-logo text-4xl font-extrabold flex gap-[1px]">
-            <span className="c-red">s</span>
-            <span className="c-orange">k</span>
-            <span className="c-yellow">r</span>
-            <span className="c-green">i</span>
-            <span className="c-cyan">b</span>
-            <span className="c-blue">b</span>
-            <span className="c-purple">l</span>
-            <span className="c-pink">.</span>
-            <span className="c-white">a</span>
-            <span className="c-yellow">i</span>
+          <h1 className="crayon-logo text-5xl font-extrabold flex gap-1.5 tracking-wider filter-wobble">
+            <span className="c-red crayon-outline-text inline-block -rotate-6 transform hover:scale-115 transition-transform duration-150 cursor-pointer">d</span>
+            <span className="c-orange crayon-outline-text inline-block rotate-3 transform hover:scale-115 transition-transform duration-150 translate-y-[2px] cursor-pointer">o</span>
+            <span className="c-yellow crayon-outline-text inline-block -rotate-3 transform hover:scale-115 transition-transform duration-150 cursor-pointer">o</span>
+            <span className="c-green crayon-outline-text inline-block rotate-6 transform hover:scale-115 transition-transform duration-150 -translate-y-[1px] cursor-pointer">d</span>
+            <span className="c-cyan crayon-outline-text inline-block -rotate-6 transform hover:scale-115 transition-transform duration-150 cursor-pointer">l</span>
+            <span className="c-blue crayon-outline-text inline-block rotate-3 transform hover:scale-115 transition-transform duration-150 translate-y-[1px] cursor-pointer">e</span>
+            <span className="c-pink crayon-outline-text inline-block rotate-6 transform hover:scale-115 transition-transform duration-150 -translate-y-[2px] cursor-pointer">.</span>
+            <span className="c-white crayon-outline-text inline-block -rotate-6 transform hover:scale-115 transition-transform duration-150 translate-y-[2px] cursor-pointer">a</span>
+            <span className="c-yellow crayon-outline-text inline-block rotate-3 transform hover:scale-115 transition-transform duration-150 cursor-pointer">i</span>
           </h1>
         </div>
 
@@ -711,7 +846,7 @@ export default function GamePage() {
 
           {/* Status badge */}
           <div className="flex items-center gap-2 text-[15px] font-bold bg-slate-200 border-2 border-slate-900 p-1.5 px-3 rounded-md border-radius-btn shadow-flat-sm">
-            <span className={`w-3.5 h-3.5 border-2 border-slate-900 rounded-full inline-block ${ollamaConnected ? "bg-[#33cc66]" : "bg-[#ff3333]"}`}></span>
+            <span className={`w-3.5 h-3.5 border-2 border-slate-900 rounded-full inline-block ${ollamaConnected ? "bg-[#33cc66]" : (connectionStatusText === "Gemini Active" ? "bg-[#b34dff]" : "bg-[#ff3333]")}`}></span>
             <span>{connectionStatusText}</span>
           </div>
 
@@ -721,7 +856,7 @@ export default function GamePage() {
             <div className="relative">
               <select
                 id="model-select"
-                disabled={!ollamaConnected || availableModels.length === 0}
+                disabled={availableModels.length === 0}
                 value={activeModel}
                 onChange={(e) => setActiveModel(e.target.value)}
                 className="bg-white border-[2.5px] border-slate-900 text-slate-900 p-1.5 pr-8 pl-3 rounded-md font-body font-semibold cursor-pointer appearance-none border-radius-btn outline-none min-w-[170px]"
@@ -729,9 +864,29 @@ export default function GamePage() {
                 {availableModels.length === 0 ? (
                   <option value="">No models detected</option>
                 ) : (
-                  availableModels.map((m) => (
-                    <option key={m} value={m}>{m}</option>
-                  ))
+                  <>
+                    {availableModels.some(m => m.startsWith("gemini-")) && (
+                      <optgroup label="Gemini Cloud Models">
+                        {availableModels.filter(m => m.startsWith("gemini-")).map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {availableModels.some(m => m.includes("qwen")) && (
+                      <optgroup label="Groq Cloud Models">
+                        {availableModels.filter(m => m.includes("qwen")).map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                    {availableModels.some(m => !m.startsWith("gemini-") && !m.includes("qwen")) && (
+                      <optgroup label="Ollama Local Models">
+                        {availableModels.filter(m => !m.startsWith("gemini-") && !m.includes("qwen")).map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </optgroup>
+                    )}
+                  </>
                 )}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-slate-900">
@@ -1109,7 +1264,7 @@ export default function GamePage() {
                   type="text"
                   value={ollamaHost}
                   onChange={(e) => setOllamaHost(e.target.value)}
-                  className="flex-grow bg-white border-[2.5px] border-slate-900 p-2 pl-3 rounded-md border-radius-btn font-body font-semibold outline-none"
+                  className="flex-grow bg-white border-[2.5px] border-slate-900 p-2 pl-3 rounded-md border-radius-btn font-body font-semibold outline-none text-slate-900"
                 />
                 <Button
                   onClick={handleSaveHost}
@@ -1119,6 +1274,54 @@ export default function GamePage() {
                 </Button>
               </div>
               <p className="text-[10px] font-semibold text-slate-500">Usually http://localhost:11434. Restart server connection on change.</p>
+            </div>
+
+            <hr className="border-t-3 border-slate-900" />
+
+            {/* Gemini API Key configuration */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="gemini-key-input" className="text-sm font-bold text-slate-800">Gemini Cloud API Key:</label>
+              <div className="flex gap-2">
+                <input
+                  id="gemini-key-input"
+                  type="password"
+                  placeholder={geminiConfiguredInBackend ? "Configured on backend (.env)" : "Enter Gemini API Key"}
+                  value={userGeminiKey}
+                  onChange={(e) => setUserGeminiKey(e.target.value)}
+                  className="flex-grow bg-white border-[2.5px] border-slate-900 p-2 pl-3 rounded-md border-radius-btn font-body font-semibold outline-none text-slate-900"
+                />
+                <Button
+                  onClick={handleSaveGeminiKey}
+                  className="bg-purple-300 hover:bg-purple-400 border-[2.5px] border-slate-900 border-radius-btn shadow-flat-sm text-slate-900 font-heading font-extrabold text-md px-4 cursor-pointer"
+                >
+                  Save
+                </Button>
+              </div>
+              <p className="text-[10px] font-semibold text-slate-500">Enable cloud vision features. Key is stored locally in your browser.</p>
+            </div>
+
+            <hr className="border-t-3 border-slate-900" />
+
+            {/* Groq API Key configuration */}
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="groq-key-input" className="text-sm font-bold text-slate-800">Groq Cloud API Key:</label>
+              <div className="flex gap-2">
+                <input
+                  id="groq-key-input"
+                  type="password"
+                  placeholder={groqConfiguredInBackend ? "Configured on backend (.env)" : "Enter Groq API Key"}
+                  value={userGroqKey}
+                  onChange={(e) => setUserGroqKey(e.target.value)}
+                  className="flex-grow bg-white border-[2.5px] border-slate-900 p-2 pl-3 rounded-md border-radius-btn font-body font-semibold outline-none text-slate-900"
+                />
+                <Button
+                  onClick={handleSaveGroqKey}
+                  className="bg-orange-300 hover:bg-orange-400 border-[2.5px] border-slate-900 border-radius-btn shadow-flat-sm text-slate-900 font-heading font-extrabold text-md px-4 cursor-pointer"
+                >
+                  Save
+                </Button>
+              </div>
+              <p className="text-[10px] font-semibold text-slate-500">Enable Groq Qwen vision models. Key is stored locally in your browser.</p>
             </div>
 
             <hr className="border-t-3 border-slate-900" />

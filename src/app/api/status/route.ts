@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 export async function GET() {
   const ollamaUrl = process.env.OLLAMA_HOST || "http://localhost:11434";
+  const geminiConfigured = !!process.env.GEMINI_API_KEY;
+  const groqConfigured = !!process.env.GROQ_API_KEY;
   
   try {
     const res = await fetch(`${ollamaUrl}/api/tags`, {
@@ -14,6 +16,8 @@ export async function GET() {
         error: `Ollama returned status ${res.status}`,
         vision_models: [],
         default_model_available: false,
+        gemini_configured: geminiConfigured,
+        groq_configured: groqConfigured,
       });
     }
     
@@ -31,6 +35,8 @@ export async function GET() {
       all_models: models,
       vision_models: visionModels,
       default_model_available: models.some((m: string) => m.toLowerCase().includes("moondream")),
+      gemini_configured: geminiConfigured,
+      groq_configured: groqConfigured,
     });
   } catch (e) {
     return NextResponse.json({
@@ -38,6 +44,8 @@ export async function GET() {
       error: e instanceof Error ? e.message : String(e),
       vision_models: [],
       default_model_available: false,
+      gemini_configured: geminiConfigured,
+      groq_configured: groqConfigured,
     });
   }
 }

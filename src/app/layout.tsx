@@ -14,8 +14,8 @@ const fredoka = Fredoka({
 });
 
 export const metadata: Metadata = {
-  title: "skribbl.ai - Play Scribble with Local AI",
-  description: "Draw anything on the canvas and play real-time guessing games with a local vision AI model.",
+  title: "doodle.ai - Play Scribble with Local and Cloud AI",
+  description: "Draw anything on the canvas and play real-time guessing games with local or cloud vision AI models.",
 };
 
 export default function RootLayout({

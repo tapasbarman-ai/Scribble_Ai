@@ -233,6 +233,7 @@ export default function GamePage() {
 
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     if (ctx) {
+      ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset scale transformation to prevent scaling accumulation on multiple runs
       ctx.scale(dpr, dpr);
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
@@ -318,9 +319,9 @@ export default function GamePage() {
     const x = clientX - rect.left;
     const y = clientY - rect.top;
 
-    // Scale coordinates based on canvas backing store ratio
-    const scaleX = canvas.width / (rect.width * (window.devicePixelRatio || 1));
-    const scaleY = canvas.height / (rect.height * (window.devicePixelRatio || 1));
+    // Normalize coordinate scale between CSS style size and actual bounding rect size (useful for zooming)
+    const scaleX = canvas.style.width ? (parseFloat(canvas.style.width) / rect.width) : 1;
+    const scaleY = canvas.style.height ? (parseFloat(canvas.style.height) / rect.height) : 1;
 
     return {
       x: x * scaleX,

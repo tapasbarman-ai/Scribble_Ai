@@ -43,3 +43,8 @@ Poll loops query guess updates every 2.5 seconds in Sandbox mode when the canvas
 Sandbox results rendered inside crayon paper containers featuring custom generated text descriptions.
 
 
+### Section 10: Challenge Mode countdown Timers
+
+40-second timers with alert notifications when time falls below 10 seconds.
+
+

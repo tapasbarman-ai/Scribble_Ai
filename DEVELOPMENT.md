@@ -58,3 +58,8 @@ List panels render guesses in order of confidence, highlighting matches dynamica
 Drawer layouts include form fields for host configuration and model download list buttons.
 
 
+### Section 13: Local Download Progress
+
+Background streams pipe NDJSON bytes from Ollama to render local download progress percentage bars.
+
+

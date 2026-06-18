@@ -13,3 +13,8 @@ Wobbly borders implemented using asymmetric border-radius values (e.g. 255px 15p
 Coordinate adjustments calculated using canvas.getBoundingClientRect() and devicePixelRatio scaling.
 
 
+### Section 4: Canvas Paint Toolbar and Swatches
+
+Drawing paint tools (brush size slider, eraser toggle, color palettes) placed in a floating toolbar.
+
+

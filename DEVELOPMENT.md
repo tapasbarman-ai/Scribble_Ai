@@ -48,3 +48,8 @@ Sandbox results rendered inside crayon paper containers featuring custom generat
 40-second timers with alert notifications when time falls below 10 seconds.
 
 
+### Section 11: Real-Time Guess Logs
+
+List panels render guesses in order of confidence, highlighting matches dynamically.
+
+

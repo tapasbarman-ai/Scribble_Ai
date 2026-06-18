@@ -28,3 +28,8 @@ Drawing paint tools (brush size slider, eraser toggle, color palettes) placed in
 Offscreen canvas paints translucent drawings onto solid white backgrounds prior to AI upload.
 
 
+### Section 7: Client-Side JPEG Conversion
+
+Canvas exports encoded as JPEG base64 strings to minimize API payloads.
+
+

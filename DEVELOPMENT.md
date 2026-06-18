@@ -53,3 +53,8 @@ Sandbox results rendered inside crayon paper containers featuring custom generat
 List panels render guesses in order of confidence, highlighting matches dynamically.
 
 
+### Section 12: Settings Modal Panel
+
+Drawer layouts include form fields for host configuration and model download list buttons.
+
+

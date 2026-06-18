@@ -1,0 +1,170 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-heading);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: #faf8f5; /* Clean cream paper */
+  --foreground: #1e293b;
+  --card: #ffffff;
+  --card-foreground: #1e293b;
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+  
+  --primary: #ffcc00; /* Yellow crayon */
+  --primary-foreground: #1e293b;
+  
+  --secondary: #e2e8f0;
+  --secondary-foreground: #1e293b;
+  
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  
+  --accent: #ff66cc; /* Pink crayon */
+  --accent-foreground: #ffffff;
+  
+  --destructive: #ff3333; /* Red crayon */
+  --destructive-foreground: #ffffff;
+  
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #ffcc00;
+  
+  --radius: 0.625rem;
+  
+  /* Crayon specific design variables */
+  --font-heading: 'Patrick Hand', cursive, sans-serif;
+  --font-body: 'Fredoka', sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+    outline-color: var(--ring);
+  }
+  body {
+    background-color: #2c5a93; /* skribbl.io theme blue background */
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'><g fill='none' stroke='rgba(255,255,255,0.07)' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M20 30c0-10 10-10 10 0s10 10 10 0M50 15 l10 15M70 20 c10 0 15 5 15 15 s-5 15-15 15 s-15-5-15-15 s5-15 15-15 M130 15 c5 5 15 5 20 20M30 110 h20 v20 h-20 z M70 120 l20-20 M120 100 c5 0 10 10 15 15 s10 10 15 0 s0-15-15-15 s-15 0-15 0M40 70 a5 5 0 1 0 0-10 a5 5 0 1 0 0 10 M100 70 l15 15 M115 70 l-15 15 M15 15 l10 10 M160 140 c-10 0-10 10 0 10 s10-10 0-10'/></g></svg>");
+    background-attachment: fixed;
+    color: var(--foreground);
+    font-family: var(--font-body);
+  }
+}
+
+/* Custom Crayon Utilities using Tailwind v4 @utility directives */
+@utility border-radius-crayon {
+  border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
+}
+
+@utility border-radius-btn {
+  border-radius: 12px 6px 10px 5px/5px 10px 6px 12px;
+}
+
+@utility shadow-flat {
+  box-shadow: 4px 4px 0px #1e293b;
+}
+
+@utility shadow-flat-lg {
+  box-shadow: 6px 6px 0px #1e293b;
+}
+
+@utility shadow-flat-sm {
+  box-shadow: 2px 2px 0px #1e293b;
+}
+
+@utility filter-wobble {
+  filter: url(#crayon-wobble);
+}
+
+/* Base scrollbar customization */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: #cbd5e1;
+  border-left: 3px solid #1e293b;
+}
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border: 3px solid #1e293b;
+  border-radius: 6px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+/* Rainbow Crayon Logo Outline Text Effect */
+.crayon-outline-text {
+  text-shadow: 
+      -2.5px -2.5px 0 #1e293b,  
+       2.5px -2.5px 0 #1e293b,
+      -2.5px  2.5px 0 #1e293b,
+       2.5px  2.5px 0 #1e293b,
+       0px 4px 0px rgba(0,0,0,0.25);
+}
+
+.c-red { color: #ff4d4d; }
+.c-orange { color: #ffa64d; }
+.c-yellow { color: #ffff4d; }
+.c-green { color: #4dff4d; }
+.c-cyan { color: #4dffff; }
+.c-blue { color: #4d4dff; }
+.c-purple { color: #b34dff; }
+.c-pink { color: #ff4db8; }
+.c-white { color: #ffffff; }
+
+/* Wobbling and animations */
+@keyframes urgentPulse {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.08); text-shadow: 1px 1px 0px rgba(0,0,0,0.1); }
+}
+
+.animate-urgent {
+  animation: urgentPulse 0.4s infinite alternate;
+}

@@ -104,23 +104,7 @@ export default function GamePage() {
     // Initial check
     checkStatus();
 
-    // Resize handler
-    const handleResize = () => {
-      // Keep drawing data during resize
-      if (canvasRef.current && contextRef.current) {
-        const tempImage = new Image();
-        tempImage.src = canvasRef.current.toDataURL();
-        tempImage.onload = () => {
-          resizeCanvas();
-          contextRef.current?.drawImage(tempImage, 0, 0, canvasRef.current!.width / (window.devicePixelRatio || 1), canvasRef.current!.height / (window.devicePixelRatio || 1));
-          saveCanvasState();
-        };
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener("resize", handleResize);
       clearAllIntervals();
     };
   }, []);
@@ -146,12 +130,83 @@ export default function GamePage() {
     };
   }, [currentGameMode, autoGuess, ollamaConnected, activeModel]);
 
-  // Init canvas ref after mount
+  // Set up ResizeObserver to handle initial sizing and any dynamic size adjustments
   useEffect(() => {
-    if (canvasRef.current) {
-      initCanvas();
-    }
-  }, [canvasRef]);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const container = canvas.parentElement;
+    if (!container) return;
+
+    let initialResized = false;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (!entries || entries.length === 0) return;
+      const entry = entries[0];
+      const { width, height } = entry.contentRect;
+
+      if (width > 0 && height > 0) {
+        const dpr = window.devicePixelRatio || 1;
+
+        if (contextRef.current) {
+          // Keep existing canvas content during resizing
+          const tempImage = new Image();
+          tempImage.src = canvas.toDataURL();
+          tempImage.onload = () => {
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+
+            const ctx = canvas.getContext("2d", { willReadFrequently: true });
+            if (ctx) {
+              ctx.setTransform(1, 0, 0, 1, 0, 0);
+              ctx.scale(dpr, dpr);
+              ctx.lineCap = "round";
+              ctx.lineJoin = "round";
+              contextRef.current = ctx;
+
+              // Fill with solid white background
+              ctx.fillStyle = "#ffffff";
+              ctx.fillRect(0, 0, width, height);
+
+              // Restore content
+              ctx.drawImage(tempImage, 0, 0, width, height);
+            }
+          };
+        } else {
+          // Initialize canvas dimensions and contexts
+          canvas.width = width * dpr;
+          canvas.height = height * dpr;
+
+          const ctx = canvas.getContext("2d", { willReadFrequently: true });
+          if (ctx) {
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.scale(dpr, dpr);
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            contextRef.current = ctx;
+
+            // Fill with solid white background
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, width, height);
+
+            // Initialize undo stack
+            if (!initialResized) {
+              initialResized = true;
+              const initialImgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              undoStackRef.current = [initialImgData];
+              redoStackRef.current = [];
+              setCanUndo(false);
+              setCanRedo(false);
+            }
+          }
+        }
+      }
+    });
+
+    resizeObserver.observe(container);
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   // Clear intervals utility
   const clearAllIntervals = () => {
@@ -200,54 +255,17 @@ export default function GamePage() {
   };
 
   // 2. Canvas Operations
-  const initCanvas = () => {
-    resizeCanvas();
-    clearCanvas(false);
-
-    // Save initial state to undo stack
-    if (canvasRef.current && contextRef.current) {
-      const initialImgData = contextRef.current.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
-      undoStackRef.current = [initialImgData];
-      redoStackRef.current = [];
-      setCanUndo(false);
-      setCanRedo(false);
-    }
-  };
-
-  const resizeCanvas = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const container = canvas.parentElement;
-    if (!container) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const rect = container.getBoundingClientRect();
-    const size = Math.min(rect.width - 24, rect.height - 24, 460);
-
-    canvas.style.width = `${size}px`;
-    canvas.style.height = `${size}px`;
-
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    if (ctx) {
-      ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset scale transformation to prevent scaling accumulation on multiple runs
-      ctx.scale(dpr, dpr);
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      contextRef.current = ctx;
-    }
-  };
-
   const clearCanvas = (recordState = true) => {
     const canvas = canvasRef.current;
     const ctx = contextRef.current;
     if (!canvas || !ctx) return;
 
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    
     canvasIsDirtyRef.current = true;
 
     if (recordState) {
@@ -751,7 +769,7 @@ export default function GamePage() {
             </div>
 
             {/* Drawing Canvas Box */}
-            <div className="flex-grow relative bg-white border-[3.5px] border-slate-900 border-radius-crayon overflow-hidden flex items-center justify-center m-4 min-h-[380px] shadow-[inset_3px_3px_0px_rgba(0,0,0,0.05)]">
+            <div className="flex-grow relative bg-slate-100 border-[3.5px] border-slate-900 border-radius-crayon overflow-hidden m-4 min-h-[380px] shadow-[inset_3px_3px_0px_rgba(0,0,0,0.05)]">
               <canvas
                 ref={canvasRef}
                 onMouseDown={startDrawing}
@@ -761,7 +779,7 @@ export default function GamePage() {
                 onTouchStart={startDrawing}
                 onTouchMove={draw}
                 onTouchEnd={stopDrawing}
-                className="block cursor-crosshair bg-transparent touch-none"
+                className="absolute inset-0 w-full h-full bg-white cursor-crosshair touch-none"
               />
 
               {/* Prediction Loader Overlay */}

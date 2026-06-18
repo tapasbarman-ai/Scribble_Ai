@@ -63,3 +63,8 @@ Drawer layouts include form fields for host configuration and model download lis
 Background streams pipe NDJSON bytes from Ollama to render local download progress percentage bars.
 
 
+### Section 14: Lucide Icons Version Resolution
+
+Lucide icon imports resolved for newer version updates (CheckCircle, XCircle).
+
+

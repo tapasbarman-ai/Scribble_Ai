@@ -33,3 +33,8 @@ Offscreen canvas paints translucent drawings onto solid white backgrounds prior 
 Canvas exports encoded as JPEG base64 strings to minimize API payloads.
 
 
+### Section 8: Real-Time Auto-Guess Loop Watcher
+
+Poll loops query guess updates every 2.5 seconds in Sandbox mode when the canvas is dirty.
+
+

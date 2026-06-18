@@ -18,3 +18,8 @@ Coordinate adjustments calculated using canvas.getBoundingClientRect() and devic
 Drawing paint tools (brush size slider, eraser toggle, color palettes) placed in a floating toolbar.
 
 
+### Section 5: Canvas Undo and Redo Memory Buffers
+
+25-state undo/redo history stack tracking ImageData arrays inside React useRef buffers.
+
+
